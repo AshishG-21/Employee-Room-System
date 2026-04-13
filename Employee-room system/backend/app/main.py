@@ -1,14 +1,20 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 employees=[]
 rooms=[]
 assignments=[]
 
-@app.get("/")
-def home():
-    return {"message": "API Running"}
 
 @app.post("/employees")
 def add_employees(name:str):
@@ -47,7 +53,7 @@ def assign(employee_id:int,room_id:int):
     assignment={"employee_id":employee_id, "room_id":room_id}
     assignments.append(assignment)
     
-    return {"message": "Assigned successfully", "data": assignment}
+    return assignment
 
 @app.get("/assignments")
 def get_assignments():
