@@ -23,23 +23,25 @@ const addEmployee= async()=>{
   window.location.reload();
 };
 return (
-     <div>
-      <h2>Employee Room System</h2>
+  
+     <div style={{padding:5, fontFamily:"Arial",background:"grey"}}>
+      <h2 style={{color:"white",background:"black"}}><center><b>Employee-Room System</b></center></h2>
 
-      <h3>Add Employee</h3>
+
+      <h3>Add employees:</h3>
       <input value={name} onChange={e => setName(e.target.value)}/>
       <button onClick={addEmployee}>Add</button>
 
-      <h3>Add Room</h3>
+      <h3>Add rooms:</h3>
       <input value={roomName} onChange={e => setRoomName(e.target.value)}/>
       <button onClick={addRoom}>Add</button>
 
-      <h3>Employees</h3>
+      <h3><u>Employees</u></h3>
       <ul>
         {employees.map(e =><li key={e.id}>{e.name}</li>)}
       </ul>
 
-      <h3>Rooms</h3>
+      <h3><u>Rooms</u></h3>
       <ul>
         {rooms.map(r => <li key={r.id}>{r.room_name}</li>)}
       </ul>
