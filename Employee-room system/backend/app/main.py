@@ -37,7 +37,7 @@ def get_rooms():
     return rooms
 
 @app.post("/assign")
-def assign(employee_id:int,room_id:int):
+def add_assignments(employee_id:int,room_id:int):
     emp=next((e for e in employees if e["id"]==employee_id),None)
     if not emp:
         raise HTTPException (status_code=404,detail="Employee not found")
@@ -49,7 +49,11 @@ def assign(employee_id:int,room_id:int):
     for a in assignments:
         if a["room_id"]==room_id:
             raise HTTPException(status_code=404,detail="Already assigned")
-    
+        
+    for a in assignments:
+        if a["employee_id"]==employee_id:
+            raise HTTPException(status_code=404,detail="Already assigned")
+        
     assignment={"employee_id":employee_id, "room_id":room_id}
     assignments.append(assignment)
     
