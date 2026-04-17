@@ -13,8 +13,7 @@ app.add_middleware(
 
 employees=[]
 rooms=[]
-assignments=[]
-
+bookings=[]
 
 @app.post("/employees")
 def add_employees(name:str):
@@ -28,7 +27,7 @@ def get_employees():
 
 @app.post("/rooms")
 def add_rooms(name:str):
-    room={"id":len(rooms)+1, "room_name":name}
+    room={"room_id":len(rooms)+1, "room_name":name}
     rooms.append(room)
     return room
 
@@ -36,35 +35,21 @@ def add_rooms(name:str):
 def get_rooms():
     return rooms
 
-@app.post("/assign")
-def add_assignments(employee_id:int,room_id:int):
-    emp=next((e for e in employees if e["id"]==employee_id),None)
-    if not emp:
-        raise HTTPException (status_code=404,detail="Employee not found")
 
-    room=next((r for r in rooms if r["id"]==room_id),None)
-    if not room:
-        raise HTTPException(status_code=404,detail="Room not found")
-    
-    for a in assignments:
-        if a["room_id"]==room_id:
-            raise HTTPException(status_code=404,detail="Already assigned")
+@app.post("/book")
+def book_room(employee_id:int,room_id:int,start:str,end:str):
+    if start>=end:
+        raise HTTPException(status_code=400,detail="Invalid time range")
+
+    for b in bookings:
+        if b["room_id"]==room_id:
+            if not (end<=b["start"] or start>=b["end"]):
+                raise HTTPException(status_code=400,detail="Time conflict")
         
-    for a in assignments:
-        if a["employee_id"]==employee_id:
-            raise HTTPException(status_code=404,detail="Already assigned")
-        
-    assignment={"employee_id":employee_id, "room_id":room_id}
-    assignments.append(assignment)
-    
-    return assignment
+    booking={"employee_id":employee_id, "room_id":room_id,"start":start,"end":end}
+    bookings.append(booking)
+    return booking
 
-@app.get("/assignments")
-def get_assignments():
-    return assignments
-    
-
-
-
-
-
+@app.get("/bookings")
+def get_bookings():
+    return bookings
