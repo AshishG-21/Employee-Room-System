@@ -1,150 +1,151 @@
 import React, { useState, useEffect } from 'react';
 
 const Book = () => {
-  const [employeeID, setEmployeeID] = useState("");
-  const [roomID, setRoomID] = useState("");
-  const [start, setStart] = useState("");
-  const [end, setEnd] = useState("");
+  const [booking, setBooking] = useState({ employee_id: '', room_id: '', start: '', end: '' });
   const [employees, setEmployees] = useState([]);
   const [rooms, setRooms] = useState([]);
-  const [bookings, setBookings] = useState([]);
+  const [bookings, setBookings] = useState({ data: [], total: 0, page: 1, pages: 1 });
+  const [loading, setLoading] = useState(false);
   const API = "http://127.0.0.1:8000";
 
   useEffect(() => {
-    fetch(API + "/employees")
-      .then(res => res.json())
-      .then(data => setEmployees(data));
-    
-    fetch(API + "/rooms")
-      .then(res => res.json())
-      .then(data => setRooms(data));
-    
-    fetch(API + "/assignments")
-      .then(res => res.json())
-      .then(data => setBookings(data));
-  }, []);
+    fetchEmployees();
+    fetchRooms();
+    fetchBookings();
+  }, [bookings.page]);
 
-  const addAssignment = async () => {
-    if (!employeeID || !roomID || !start || !end) {
-      alert("Please select employee, room, start time and end time");
+  const fetchEmployees = async () => {
+    const res = await fetch(`${API}/employees/all`);
+    const data = await res.json();
+    setEmployees(data);
+  };
+
+  const fetchRooms = async () => {
+    const res = await fetch(`${API}/rooms/all`);
+    const data = await res.json();
+    setRooms(data);
+  };
+
+  const fetchBookings = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/assignments?page=${bookings.page}&limit=5`);
+      const data = await res.json();
+      setBookings(data);
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addBooking = async () => {
+    const { employee_id, room_id, start, end } = booking;
+    if (!employee_id || !room_id || !start || !end) {
+      alert("Please fill all fields");
       return;
     }
-
-    const res = await fetch(
-      `${API}/assign?employee_id=${employeeID}&room_id=${roomID}&start=${start}&end=${end}`, 
+    
+    const res = await fetch(`${API}/assign?employee_id=${employee_id}&room_id=${room_id}&start=${start}&end=${end}`, 
       { method: "POST" }
     );
-    const data = await res.json();
-
-    if (!res.ok) {
-      alert(data.detail);
-      return;
+    
+    if (res.ok) {
+      setBooking({ employee_id: '', room_id: '', start: '', end: '' });
+      fetchBookings();
+      alert("Room booked successfully");
+    } else {
+      const error = await res.json();
+      alert(error.detail);
     }
+  };
 
-    setBookings([...bookings, data]);
-    setEmployeeID("");
-    setRoomID("");
-    setStart("");
-    setEnd("");
+  const handleDelete = async (id) => {
+    if (window.confirm("Cancel this booking?")) {
+      const res = await fetch(`${API}/assignments/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        fetchBookings();
+        alert("Booking cancelled");
+      }
+    }
+  };
+
+  const changePage = (newPage) => {
+    if (newPage >= 1 && newPage <= bookings.pages) {
+      setBookings({ ...bookings, page: newPage });
+    }
   };
 
   return (
-    <div className="container mt-4">
-      <div className="row">
-        <div className="col-md-6">
-          <div className="card p-4 mb-4">
-            <div className="card-body">
-              <h3 className="card-header"><b>Assign Room</b></h3>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex flex-wrap -mx-4">
+  
+        <div className="w-full lg:w-1/2 px-4 mb-8">
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h3 className="text-xl font-bold mb-4"><u>Book a Room</u></h3>
+            <div className="space-y-3">
+              <select className="w-full p-2 border rounded" value={booking.employee_id} 
+                onChange={e => setBooking({...booking, employee_id: e.target.value})}>
+                <option value="">Select Employee</option>
+                {employees.map(emp => <option key={emp._id} value={emp._id}>{emp.name}</option>)}
+              </select>
               
-              <div className="mb-3 mt-3">
-                <label className="form-label">Select Employee:</label>
-                <select 
-                  className="form-select" 
-                  value={employeeID} 
-                  onChange={e => setEmployeeID(e.target.value)}
-                >
-                  <option value="">Select Employee</option>
-                  {employees.map(e => (
-                    <option key={e._id} value={e._id}>
-                      {e.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="mb-3">
-                <label className="form-label">Select Room:</label>
-                <select 
-                  className="form-select" 
-                  value={roomID} 
-                  onChange={e => setRoomID(e.target.value)}
-                >
-                  <option value="">Select Room</option>
-                  {rooms.map(r => (
-                    <option key={r._id} value={r._id}>
-                      {r.room_name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="mb-3">
-                <label className="form-label">Start Time:</label>
-                <input 
-                  type="datetime-local" 
-                  className="form-control" 
-                  value={start} 
-                  onChange={e => setStart(e.target.value)} 
-                />
-              </div>
-
-              <div className="mb-3">
-                <label className="form-label">End Time:</label>
-                <input 
-                  type="datetime-local" 
-                  className="form-control" 
-                  value={end} 
-                  onChange={e => setEnd(e.target.value)} 
-                />
-              </div>
-
-              <button 
-                className="btn btn-success" 
-                onClick={addAssignment}
-              >
-                Book
+              <select className="w-full p-2 border rounded" value={booking.room_id}
+                onChange={e => setBooking({...booking, room_id: e.target.value})}>
+                <option value="">Select Room</option>
+                {rooms.map(room => <option key={room._id} value={room._id}>{room.room_name}</option>)}
+              </select>
+              
+              <input type="datetime-local" className="w-full p-2 border rounded"
+                value={booking.start} onChange={e => setBooking({...booking, start: e.target.value})} />
+              <input type="datetime-local" className="w-full p-2 border rounded"
+                value={booking.end} onChange={e => setBooking({...booking, end: e.target.value})} />
+              
+              <button onClick={addBooking} className="w-full bg-green-600 text-black py-2 rounded hover:bg-green-700">
+                Book Room
               </button>
             </div>
           </div>
         </div>
 
-        <div className="col-md-6">
-          <div className="accordion">
-            <div className="accordion-item">
-              <h3 className="accordion-header">
-                <button 
-                  className="accordion-button" 
-                  type="button" 
-                  data-bs-toggle="collapse" 
-                  data-bs-target="#collapseBookings"
-                >
-                  <b><u>Bookings List</u></b>
-                </button>
-              </h3>
-              <div id="collapseBookings" className="accordion-collapse collapse show">
-                <div className="accordion-body">
-                  <ul className="list-group">
-                    {bookings.map((b) => (
-                      <li className="list-group-item" key={b._id}>
-                        Employee ID: {b.employee_id}<br/>
-                         Room ID: {b.room_id}<br/>
-                        Time: {b.start} to {b.end}
-                      </li>
-                    ))}
-                  </ul>
+  
+        <div className="w-full lg:w-1/2 px-4 mb-8">
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h3 className="text-xl font-bold mb-4">Bookings ({bookings.total})</h3>
+            
+            {loading ? (
+              <div className="text-center py-4">Loading...</div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  {bookings.data.map(b => (
+                    <div key={b._id} className="bg-gray-50 p-3 rounded border">
+                      <div className="font-semibold">{b.employee_name}</div>
+                      <div className="text-sm">Room: {b.room_name}</div>
+                      <div className="text-sm">From: {new Date(b.start).toLocaleString()}</div>
+                      <div className="text-sm">To: {new Date(b.end).toLocaleString()}</div>
+                      <button onClick={() => handleDelete(b._id)} className="mt-2 bg-red-500 text-black px-3 py-1 rounded text-sm">
+                        Cancel
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              </div>
-            </div>
+
+                {bookings.pages > 1 && (
+                  <div className="flex justify-center gap-2 mt-4">
+                    <button onClick={() => changePage(bookings.page - 1)} disabled={bookings.page === 1}
+                      className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50">
+                      Prev
+                    </button>
+                    <span className="px-3 py-1">Page {bookings.page} of {bookings.pages}</span>
+                    <button onClick={() => changePage(bookings.page + 1)} disabled={bookings.page === bookings.pages}
+                      className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50">
+                      Next
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>
