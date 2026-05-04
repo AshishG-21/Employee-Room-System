@@ -1,8 +1,10 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
 from pymongo import MongoClient
 from bson import ObjectId
 from bson.errors import InvalidId
+from pydantic import BaseModel
+from typing import Optional
 
 app = FastAPI()
 
@@ -20,6 +22,25 @@ db = client["office_booking"]
 employees_col = db["employees"]
 rooms_col = db["rooms"]
 assignments_col = db["assignments"]
+
+
+class EmployeeUpdate(BaseModel):
+    name: str
+    gender: str
+    address: str
+    email: str
+    contact: str
+
+class RoomUpdate(BaseModel):
+    name: str
+    floor_no: str
+    size: str    
+
+class AssignmentUpdate(BaseModel):
+    employee_id: str
+    room_id: str
+    start: str
+    end: str    
 
 def serialize(data):
     data["_id"] = str(data["_id"])
@@ -40,6 +61,7 @@ def paginate(collection, page=1, limit=10, filter_query={}):
         "pages": (total + limit - 1) // limit,
         "limit": limit
     }
+
 
 
 @app.post("/employees")
@@ -68,6 +90,46 @@ def get_employees(page: int = Query(1, ge=1), limit: int = Query(5, ge=1, le=50)
 def get_all_employees():
     return [serialize(e) for e in employees_col.find()]
 
+@app.put("/employees/{employee_id}")
+def update_employee(employee_id: str, employee: EmployeeUpdate):
+    try:
+        print(f"Received update for ID: {employee_id}")
+        print(f"Received data: {employee}")
+        
+        emp_id = ObjectId(employee_id)
+        
+    
+        existing = employees_col.find_one({"_id": emp_id})
+        if not existing:
+            raise HTTPException(404, "Employee not found")
+        
+        result = employees_col.update_one(
+            {"_id": emp_id}, 
+            {"$set": {
+                "name": employee.name.strip(),
+                "gender": employee.gender.strip(),
+                "address": employee.address.strip(),
+                "email": employee.email.strip(),
+                "contact": employee.contact.strip()
+            }}
+        )
+        
+        if result.modified_count == 0:
+            return {"message": "No changes made", "success": True}
+        
+        
+        updated_employee = employees_col.find_one({"_id": emp_id})
+        
+        return {
+            "message": "Employee updated successfully", 
+            "success": True,
+            "employee": serialize(updated_employee)
+        }
+    except InvalidId:
+        raise HTTPException(400, "Invalid ID format")
+    except Exception as e:
+        print(f"Error: {e}")
+        raise HTTPException(500, str(e))
 
 @app.delete("/employees/{employee_id}")
 def delete_employee(employee_id: str):
@@ -79,7 +141,6 @@ def delete_employee(employee_id: str):
         return {"message": "Deleted successfully"}
     except InvalidId:
         raise HTTPException(400, "Invalid ID")
-
 
 
 @app.post("/rooms")
@@ -106,6 +167,45 @@ def get_rooms(page: int = Query(1, ge=1), limit: int = Query(5, ge=1, le=50)):
 def get_all_rooms():
     return [serialize(r) for r in rooms_col.find()]
 
+@app.put("/rooms/{room_id}")
+def update_room(room_id: str, room: RoomUpdate):
+    try:
+        print(f"Received update for ID: {room_id}")
+        print(f"Received data: {room}")
+        
+        r_id = ObjectId(room_id)
+        
+    
+        existing = rooms_col.find_one({"_id": r_id})
+        if not existing:
+            raise HTTPException(404, "Room not found")
+    
+        result = rooms_col.update_one(
+            {"_id": r_id}, 
+            {"$set": {
+                "room_name": room.name.strip(),
+                "floor_no": room.floor_no,
+                "size": room.size.strip()
+            }}
+        )
+        
+        if result.modified_count == 0:
+            return {"message": "No changes made", "success": True}
+        
+    
+        updated_room = rooms_col.find_one({"_id": r_id})
+        
+        return {
+            "message": "Room updated successfully", 
+            "success": True,
+            "room": serialize(updated_room)
+        }
+    except InvalidId:
+        raise HTTPException(400, "Invalid ID format")
+    except Exception as e:
+        print(f"Error: {e}")
+        raise HTTPException(500, str(e))
+
 @app.delete("/rooms/{room_id}")
 def delete_room(room_id: str):
     try:
@@ -116,6 +216,7 @@ def delete_room(room_id: str):
         return {"message": "Deleted successfully"}
     except InvalidId:
         raise HTTPException(400, "Invalid ID")
+
 
 
 @app.post("/assign")
@@ -129,6 +230,7 @@ def assign(employee_id: str, room_id: str, start: str, end: str):
         
         if start >= end:
             raise HTTPException(400, "Invalid time range")
+        
         for b in assignments_col.find({"room_id": room_id}):
             if not (end <= b["start"] or start >= b["end"]):
                 raise HTTPException(400, "Room already booked")
@@ -158,7 +260,6 @@ def assign(employee_id: str, room_id: str, start: str, end: str):
 def get_assignments(page: int = Query(1, ge=1), limit: int = Query(5, ge=1, le=50)):
     result = paginate(assignments_col, page, limit)
     
-
     for item in result["data"]:
         emp = employees_col.find_one({"_id": ObjectId(item["employee_id"])})
         room = rooms_col.find_one({"_id": ObjectId(item["room_id"])})
@@ -166,6 +267,81 @@ def get_assignments(page: int = Query(1, ge=1), limit: int = Query(5, ge=1, le=5
         item["room_name"] = room["room_name"] if room else "Unknown"
     
     return result
+
+@app.get("/assignments/all")
+def get_all_assignments():
+    result = [serialize(a) for a in assignments_col.find()]
+    
+    for item in result:
+        emp = employees_col.find_one({"_id": ObjectId(item["employee_id"])})
+        room = rooms_col.find_one({"_id": ObjectId(item["room_id"])})
+        item["employee_name"] = emp["name"] if emp else "Unknown"
+        item["room_name"] = room["room_name"] if room else "Unknown"
+    
+    return result
+
+@app.put("/assignments/{booking_id}")
+def update_assignment(booking_id: str, assignment: AssignmentUpdate):
+    try:
+        print(f"Received update for ID: {booking_id}")
+        print(f"Received data: {assignment}")
+        
+        b_id = ObjectId(booking_id)
+        
+    
+        existing = assignments_col.find_one({"_id": b_id})
+        if not existing:
+            raise HTTPException(404, "Booking not found")
+        
+        emp = employees_col.find_one({"_id": ObjectId(assignment.employee_id)})
+        room = rooms_col.find_one({"_id": ObjectId(assignment.room_id)})
+        
+        if not emp or not room:
+            raise HTTPException(404, "Employee or Room not found")
+        
+        if assignment.start >= assignment.end:
+            raise HTTPException(400, "Invalid time range")
+        
+        for b in assignments_col.find({"room_id": assignment.room_id, "_id": {"$ne": b_id}}):
+            if not (assignment.end <= b["start"] or assignment.start >= b["end"]):
+                raise HTTPException(400, "Room already booked")
+        
+        for b in assignments_col.find({"employee_id": assignment.employee_id, "_id": {"$ne": b_id}}):
+            if not (assignment.end <= b["start"] or assignment.start >= b["end"]):
+                raise HTTPException(400, "Employee already booked")
+        
+        result = assignments_col.update_one(
+            {"_id": b_id}, 
+            {"$set": {
+                "employee_id": assignment.employee_id,
+                "room_id": assignment.room_id,
+                "start": assignment.start,
+                "end": assignment.end
+            }}
+        )
+        
+        if result.modified_count == 0:
+            return {"message": "No changes made", "success": True}
+        
+        
+        updated_booking = assignments_col.find_one({"_id": b_id})
+        
+        return {
+            "message": "Booking updated successfully", 
+            "success": True,
+            "booking": {
+                "_id": str(updated_booking["_id"]),
+                "employee_name": emp["name"],
+                "room_name": room["room_name"],
+                "start": updated_booking["start"],
+                "end": updated_booking["end"]
+            }
+        }
+    except InvalidId:
+        raise HTTPException(400, "Invalid ID format")
+    except Exception as e:
+        print(f"Error: {e}")
+        raise HTTPException(500, str(e))
 
 @app.delete("/assignments/{booking_id}")
 def delete_assignment(booking_id: str):
