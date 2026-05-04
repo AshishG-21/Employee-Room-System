@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-
+import { Link } from 'react-router-dom';
 const Book = () => {
   const [booking, setBooking] = useState({ employee_id: '', room_id: '', start: '', end: '' });
   const [employees, setEmployees] = useState([]);
@@ -111,7 +111,7 @@ const Book = () => {
   
         <div className="w-full lg:w-1/2 px-4 mb-8">
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-xl font-bold mb-4">Bookings ({bookings.total})</h3>
+            <h3 className="text-xl font-bold mb-4"><u>Bookings</u> ({bookings.total})</h3>
             
             {loading ? (
               <div className="text-center py-4">Loading...</div>
@@ -124,6 +124,13 @@ const Book = () => {
                       <div className="text-sm">Room: {b.room_name}</div>
                       <div className="text-sm">From: {new Date(b.start).toLocaleString()}</div>
                       <div className="text-sm">To: {new Date(b.end).toLocaleString()}</div>
+                       <Link 
+                            to={`/bookingedit/${b._id}`} 
+                            className="btn btn-warning"
+                          >
+                            Edit
+                          </Link>
+                          <br></br>
                       <button onClick={() => handleDelete(b._id)} className="mt-2 bg-red-500 text-black px-3 py-1 rounded text-sm">
                         Cancel
                       </button>
