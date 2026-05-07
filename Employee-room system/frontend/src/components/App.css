@@ -24,7 +24,7 @@ body {
 .my-link { color:rgb(222, 222, 230); }
 .my-link:hover { color: #ffc107; }
 .my-link:active { color: blue; }
-.my-link.active { color: black; }
+.my-link.active { color: #ffc107; }
 .my-link { text-decoration:underline; }
 .my-link { text-decoration-thickness: 2.25px; }
 
@@ -37,7 +37,7 @@ body {
 }
 
 .details-header2{
-  background: #03b3f8;
+  background: #352bbd;
   color: white;
   border-radius: 8px;
 }
