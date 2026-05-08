@@ -67,15 +67,13 @@ const Book = () => {
       return;
     }
     
-    const res = await fetch(`${API}/assign?employee_id=${employee_id}&room_id=${room_id}&start=${start}&end=${end}`, 
+    const res = await fetch(`${API}/assignments/assign?employee_id=${employee_id}&room_id=${room_id}&start=${start}&end=${end}`, 
       { method: "POST" }
     );
     
     if (res.ok) {
       setForm({ employee_id: '', room_id: '', start: '', end: '' });
-       const newTotalPages = Math.ceil((bookings.total + 1) / 5);
-      setBookings({ ...bookings, page: newTotalPages });
-      fetchBookings();
+       setBookings({...bookings,page:1}); 
       toast.success("Room booked successfully");
     } else {
       const error = await res.json();
@@ -186,7 +184,7 @@ const Book = () => {
   
         <div className="w-full lg:w-1/2 px-4 mb-8">
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-xl font-bold mb-4"><u>Book a Room</u></h3>
+            <h3 className="text-xl font-bold mb-4">Book a Room</h3>
             <div className="space-y-3">
               <select className="w-full p-2 border rounded" value={form.employee_id} 
                style={{marginRight: '20px'}}
@@ -209,7 +207,7 @@ const Book = () => {
                style={{marginRight: '20px'}}
                 value={form.end} onChange={e => setForm({...form, end: e.target.value})} />
               
-              <button ty onClick={addBooking} className="w-full bg-green-600  py-2 rounded hover:bg-green-700 btn btn-outline-dark">
+              <button  onClick={addBooking} className="w-full bg-green-600  py-2 rounded hover:bg-green-700 btn btn-outline-dark">
                 Book Room
               </button>
             </div>
@@ -328,9 +326,9 @@ const Book = () => {
               <div className="space-y-4">
                 <div>
                   <label className="block text-gray-700 font-semibold mb-1">Employee Name *</label>
-                  <select className="w-full p-2 border rounded" value={form.employee_id} 
+                  <select className="w-full p-2 border rounded" value={editForm.employee_id} 
                style={{marginRight: '20px'}}
-                onChange={e => setForm({...form, employee_id: e.target.value})}>
+                onChange={e => setEditForm({...editForm, employee_id: e.target.value})}>
                 <option value="">Select Employee</option>
                 {employees.map(emp => <option key={emp._id} value={emp._id}>{emp.name}</option>)}
               </select>
@@ -338,9 +336,9 @@ const Book = () => {
                 
                 <div>
                   <label className="block text-gray-700 font-semibold mb-1">Room Name *</label>
-                 <select className="w-full p-2 border rounded" value={form.room_id}
+                 <select className="w-full p-2 border rounded" value={editForm.room_id}
                style={{marginRight: '20px'}}
-                onChange={e => setForm({...form, room_id: e.target.value})}>
+                onChange={e => setEditForm({...editForm, room_id: e.target.value})}>
                 <option value="">Select Room</option>
                 {rooms.map(room => <option key={room._id} value={room._id}>{room.room_name}</option>)}
               </select>
