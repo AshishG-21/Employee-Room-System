@@ -56,9 +56,7 @@ const Employees = () => {
     
     if (res.ok) {
       setForm({ name: '', gender: '', address: '', email: '', contact: '' });
-      const newTotalPages = Math.ceil((employees.total + 1) / entriesPerPage);
-      setEmployees({ ...employees, page: newTotalPages });
-      fetchEmployees();
+      setEmployees({...employees,page:1});
       toast.success("Employee added successfully");
     } else {
       const error = await res.json();
@@ -215,10 +213,7 @@ const Employees = () => {
                <br></br>
               
               <button 
-                onClick={addEmployee} 
-                
-                 type="button" className="btn btn-outline-dark"
-                
+                onClick={addEmployee}  className="btn btn-outline-dark"
               >
                 Add Employee
               </button>
