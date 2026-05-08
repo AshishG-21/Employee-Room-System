@@ -48,15 +48,13 @@ const Rooms = () => {
       return;
     }
     
-    const res = await fetch(`${API}/rooms?room_name=${room_name}&floor_no=${floor_no}&occupancy=${occupancy}`, 
+    const res = await fetch(`${API}/rooms?name=${room_name}&floor_no=${floor_no}&occupancy=${occupancy}`, 
       { method: "POST" }
     );
     
     if (res.ok) {
       setForm({ room_name: '', floor_no: '', occupancy: ''});
-      const newTotalPages = Math.ceil((rooms.total + 1) / 5);
-      setRooms({ ...rooms, page: newTotalPages });
-      fetchRooms();
+      setRooms({...rooms,page:1});
       toast.success("Room added successfully");
     } else {
       const error = await res.json();
@@ -182,12 +180,13 @@ const Rooms = () => {
                 onChange={e => setForm({...form, floor_no: e.target.value})}
               >
                 <option value="">Select Floor No</option>
-                <option value="Male">1</option>
-                <option value="Female">2</option>
-                <option value="Other">3</option>
-                <option value="Other">4</option>
-                <option value="Other">5</option>
-                <option value="Other">6</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
               </select>
               <input 
                 type="text" 
@@ -201,11 +200,8 @@ const Rooms = () => {
                <br></br>
               
               <button 
-                onClick={addRoom} 
-               
-                 type="button" className="btn btn-outline-dark"
-                
-              >
+                onClick={addRoom}
+                  className="btn btn-outline-dark" >
                 Add Room
               </button>
               
@@ -351,9 +347,14 @@ const Rooms = () => {
                     onChange={e => setEditForm({...editForm, floor_no: e.target.value})}
                   >
                     <option value="">Select Floor No</option>
-                    <option value="Male">1</option>
-                    <option value="Female">2</option>
-                    <option value="Other">3</option>
+                    <option value="">Select Floor No</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
                   </select>
                 </div>
                 
