@@ -2,12 +2,24 @@ from fastapi import APIRouter, HTTPException, Query
 from bson import ObjectId
 from bson.errors import InvalidId
 from app.database import employees_col, assignments_col, serialize, paginate
-from app.employees.schema import EmployeeUpdate
+from app.employees.schema import EmployeeUpdate, EmployeeResponse, EmployeeCreate
+from pydantic import ValidationError
 
 router = APIRouter(prefix="/employees", tags=["Employees"])
 
-@router.post("")
+@router.post("", response_model=EmployeeResponse) 
 def add_employee(name: str, gender: str, address: str, email: str, contact: str):
+    try:
+        validated = EmployeeCreate(
+            name=name,
+            gender=gender,
+            address=address,
+            email=email,
+            contact=contact
+        )
+    except ValidationError as e:
+        raise HTTPException(400, str(e.errors()))
+    
     if not all([name, gender, address, email, contact]):
         raise HTTPException(400, "All fields required")
     
@@ -22,8 +34,14 @@ def add_employee(name: str, gender: str, address: str, email: str, contact: str)
         "contact": contact.strip()
     })
     
-    return {"_id": str(result.inserted_id), "name": name, "gender": gender, 
-            "address": address, "email": email, "contact": contact}
+    return EmployeeResponse(
+        _id=str(result.inserted_id),
+        name=name,
+        gender=gender,
+        address=address,
+        email=email,
+        contact=contact
+    )
 
 @router.get("")
 def get_employees(page: int = Query(1, ge=1), limit: int = Query(5, ge=1, le=50)):
@@ -31,7 +49,18 @@ def get_employees(page: int = Query(1, ge=1), limit: int = Query(5, ge=1, le=50)
 
 @router.get("/all")
 def get_all_employees():
-    return [serialize(e) for e in employees_col.find()]
+    employees = list(employees_col.find())
+    result = []
+    for emp in employees:
+        result.append({
+            "_id": str(emp["_id"]),  
+            "name": emp.get("name", ""),
+            "gender": emp.get("gender", ""),
+            "address": emp.get("address", ""),
+            "email": emp.get("email", ""),
+            "contact": emp.get("contact", "")
+        })
+    return result
 
 @router.put("/{employee_id}")
 def update_employee(employee_id: str, employee: EmployeeUpdate):
@@ -42,7 +71,7 @@ def update_employee(employee_id: str, employee: EmployeeUpdate):
         if not existing:
             raise HTTPException(404, "Employee not found")
         
-        result = employees_col.update_one(
+        employees_col.update_one(
             {"_id": emp_id}, 
             {"$set": {
                 "name": employee.name.strip(),
@@ -55,11 +84,14 @@ def update_employee(employee_id: str, employee: EmployeeUpdate):
         
         updated_employee = employees_col.find_one({"_id": emp_id})
         
-        return {
-            "message": "Employee updated successfully", 
-            "success": True,
-            "employee": serialize(updated_employee)
-        }
+        return EmployeeResponse(
+            _id=str(updated_employee["_id"]),
+            name=updated_employee.get("name", ""),
+            gender=updated_employee.get("gender", ""),
+            address=updated_employee.get("address", ""),
+            email=updated_employee.get("email", ""),
+            contact=updated_employee.get("contact", "")
+        )
     except InvalidId:
         raise HTTPException(400, "Invalid ID format")
     except Exception as e:
