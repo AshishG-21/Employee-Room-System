@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import Optional
 
 class BookingCreate(BaseModel):
     employee_id:str
@@ -13,9 +14,10 @@ class BookingUpdate(BaseModel):
     end:str
 
 class BookingResponse(BaseModel):
-    id:str
+    _id:str
+    employee_id:str
+    room_id:str
     employee_name:str
     room_name:str
     start:str
     end:str
-
