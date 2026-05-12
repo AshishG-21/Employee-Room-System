@@ -1,12 +1,18 @@
 from pymongo import MongoClient
+from app.config import settings
+
+MONGODB_URL = settings.MONGODB_URL
+MONGODB_DATABASE = settings.MONGODB_DATABASE
 
 try:
-    client = MongoClient("mongodb://localhost:27017")
-    db = client["office_booking"]
+    client = MongoClient(settings.MONGODB_URL)
+    db = client[settings.MONGODB_DATABASE]
+    
     client.admin.command('ping')
-    print("MongoDB connected successfully!")
+    print(f"✅ MongoDB connected to {MONGODB_URL}")
+    print(f"✅ Using database: {MONGODB_DATABASE}")
 except Exception as e:
-    print(f"MongoDB connection failed: {e}")
+    print(f"❌ MongoDB connection failed: {e}")
 
 employees_col = db["employees"]
 rooms_col = db["rooms"]
